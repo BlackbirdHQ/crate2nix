@@ -22,6 +22,9 @@
           gnugrep
           utillinux
           cacert
+          iconv.dev
+          darwin.apple_sdk.frameworks.CoreFoundation
+          darwin.apple_sdk.frameworks.Security
         ];
 
         commands = with pkgs; [
@@ -30,12 +33,12 @@
           { package = nixpkgs-fmt; category = "nix"; }
           { package = nix; category = "nix"; }
           { package = nix-prefetch-git; category = "nix"; }
-          {
-            name = "nix-test";
-            package = (import ../nix-test-runner.nix { inherit pkgs; });
-            category = "nix";
-            help = "nix test runner for unit tests.";
-          }
+          # {
+          #   name = "nix-test";
+          #   package = (import ../nix-test-runner.nix { inherit pkgs; });
+          #   category = "nix";
+          #   help = "nix test runner for unit tests.";
+          # }
           { package = inputs'.cachix.packages.default; category = "nix"; }
         ];
 
