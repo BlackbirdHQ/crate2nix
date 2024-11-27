@@ -25,6 +25,7 @@
           iconv.dev
           darwin.apple_sdk.frameworks.CoreFoundation
           darwin.apple_sdk.frameworks.Security
+          curl.out
         ];
 
         commands = with pkgs; [
