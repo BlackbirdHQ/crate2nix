@@ -1,5 +1,10 @@
 { nixpkgs ? ./nix/nixpkgs.nix
-, pkgs ? import nixpkgs { config = { }; }
+, pkgs ? import nixpkgs {
+  config = { };
+  overlays = [
+    (import <rust-overlay>)
+  ];
+}
   # Path to nixpkgs for running/building the integration tests
   # created with the "buildTest" function (e.g. those in the buildTestConfigs array)
   # and not for building crate2nix etc itself.
@@ -48,8 +53,7 @@ let
             (
               oldAttrs: {
                 buildInputs = oldAttrs.buildInputs ++ [
-                  (pkgs.writeShellScriptBin "nix-prefetch-url" nixPrefetchUrl)
-                  (pkgs.writeShellScriptBin "nix-prefetch-git" nixPrefetchGit)
+                  pkgs.nix-prefetch-git
                 ];
               }
             )
@@ -556,7 +560,7 @@ in
   };
 
   buildNixTestWithLatestCrate2nix = pkgs.callPackage ./nix/nix-test-runner.nix {
-    inherit tools;
+    inherit tools pkgs;
   };
 
   inherit buildTestConfigs;

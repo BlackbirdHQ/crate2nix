@@ -3,7 +3,11 @@
     let
       flakeLock = builtins.fromJSON (builtins.readFile ../flake.lock);
     in
-    import "${builtins.fetchTree flakeLock.nodes.nixpkgs.locked}" { }
+      import "${builtins.fetchTree flakeLock.nodes.nixpkgs.locked}" {
+        overlays = [
+          (import <rust-overlay>)
+        ];
+      }
   )
 , stdenv ? pkgs.stdenv
 , lib ? pkgs.lib
@@ -20,7 +24,14 @@
 , release ? true
 }:
 let
-  cargoNix = callPackage cargoNixPath { inherit release; };
+  cargoNix = callPackage cargoNixPath {
+    inherit release;
+    workspaceSrc = ./.;
+    buildRustCrateForPkgs = pkgs: pkgs.buildRustCrate.override {
+      rustc = pkgs.rust-bin.stable.latest.minimal;
+      cargo = pkgs.rust-bin.stable.latest.minimal;
+    };
+  };
   withoutTemplates = name: type:
     let
       baseName = builtins.baseNameOf (builtins.toString name);
@@ -41,13 +52,14 @@ let
               inherit src;
             };
         dontFixup = !release;
+        buildInputs = [ pkgs.openssl pkgs.zlib pkgs.curl] ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.CoreFoundation darwin.apple_sdk.frameworks.Security ];
       };
       cssparser-macros = attrs: assert builtins.trace "cssparser" true;{
         buildInputs = lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security ];
       };
       libgit2-sys = old: {
         nativeBuildInputs = (old.nativeBuildInputs or []) ++ pkgs.libgit2.nativeBuildInputs;
-        buildInputs = (old.buildInputs or []) ++ pkgs.libgit2.buildInputs ++ [pkgs.iconv.dev pkgs.apple-sdk.frameworks.CoreFoundation];
+        buildInputs = (old.buildInputs or []) ++ pkgs.libgit2.buildInputs;
         propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ pkgs.libgit2.propagatedBuildInputs;
       };
     };

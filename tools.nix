@@ -5,22 +5,43 @@
 # avoid breaking the API and/or mention breakages in the CHANGELOG.
 #
 
-{ pkgs ? import ./nix/nixpkgs.nix { config = { }; }
+{ pkgs ? import ./nix/nixpkgs.nix {
+  config = { };
+  overlays = [
+    (import <rust-overlay>)
+  ];
+}
 , lib ? pkgs.lib
 , stdenv ? pkgs.stdenv
+, darwin ? pkgs.darwin
 , strictDeprecation ? true
+, release ? false
 }:
 let
-  defaultCrateOverrides = pkgs.defaultCrateOverrides // {
-    libgit2-sys = old: {
-      nativeBuildInputs = (old.nativeBuildInputs or []) ++ pkgs.libgit2.nativeBuildInputs;
-      buildInputs = (old.buildInputs or []) ++ pkgs.libgit2.buildInputs ++ [pkgs.iconv.dev pkgs.apple_sdk.frameworks.CoreFoundation];
-      propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ pkgs.libgit2.propagatedBuildInputs;
+  cargoNix = pkgs.callPackage ./crate2nix/Cargo.nix {
+    inherit strictDeprecation;
+    buildRustCrateForPkgs = pkgs: pkgs.buildRustCrate.override {
+      rustc = pkgs.rust-bin.stable.latest.minimal;
+      cargo = pkgs.rust-bin.stable.latest.minimal;
+    };
+    workspaceSrc = ./crate2nix;
+  };
+  crate2nix = cargoNix.rootCrate.build.override {
+    crateOverrides = pkgs.defaultCrateOverrides // {
+      crate2nix = { src, ... }: {
+        dontFixup = !release;
+        buildInputs = [ pkgs.openssl pkgs.zlib pkgs.curl] ++ lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.CoreFoundation darwin.apple_sdk.frameworks.Security ];
+      };
+      cssparser-macros = attrs: assert builtins.trace "cssparser" true;{
+        buildInputs = lib.optionals stdenv.isDarwin [ darwin.apple_sdk.frameworks.Security ];
+      };
+      libgit2-sys = old: {
+        nativeBuildInputs = (old.nativeBuildInputs or []) ++ pkgs.libgit2.nativeBuildInputs;
+        buildInputs = (old.buildInputs or []) ++ pkgs.libgit2.buildInputs;
+        propagatedBuildInputs = (old.propagatedBuildInputs or [ ]) ++ pkgs.libgit2.propagatedBuildInputs;
+      };
     };
   };
-
-  cargoNix = pkgs.callPackage ./crate2nix/Cargo.nix { inherit strictDeprecation defaultCrateOverrides; workspaceSrc = ./.; };
-  crate2nix = cargoNix.rootCrate.build;
 in
 rec {
 
@@ -52,7 +73,7 @@ rec {
     stdenv.mkDerivation {
       name = "${name}-crate2nix";
 
-      buildInputs = [ pkgs.cargo pkgs.jq crate2nix pkgs.nix ];
+      buildInputs = [ pkgs.cargo pkgs.jq crate2nix pkgs.nix pkgs.cacert ];
       preferLocalBuild = true;
 
       inherit src;

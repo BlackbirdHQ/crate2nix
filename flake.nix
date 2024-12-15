@@ -11,7 +11,7 @@
   };
 
   inputs = {
-    nixpkgs.url = "nixpkgs";
+    nixpkgs.url = "github:NixOS/nixpkgs/71a6392e367b08525ee710a93af2e80083b5b3e2";
 
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/1.tar.gz";
 
@@ -21,7 +21,10 @@
     };
 
     # Development
-
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     devshell = {
       url = "github:numtide/devshell";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -29,6 +32,7 @@
 
     crate2nix_stable = {
       url = "github:nix-community/crate2nix/0.14.1";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     nix-test-runner = {
@@ -43,6 +47,7 @@
       inputs.devenv.follows = "";
       inputs.flake-compat.follows = "";
       inputs.pre-commit-hooks.follows = "";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
 
     pre-commit-hooks = {
@@ -53,7 +58,7 @@
     };
   };
 
-  outputs = inputs@{ nixpkgs, self, flake-parts, devshell, pre-commit-hooks, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs@{ nixpkgs, rust-overlay, self, flake-parts, devshell, pre-commit-hooks, ... }: flake-parts.lib.mkFlake { inherit inputs; } {
     systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
 
     imports = [

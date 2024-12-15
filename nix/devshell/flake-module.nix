@@ -12,6 +12,13 @@
     , pkgs
     , ...
     } @ perSystem: {
+      _module.args.pkgs = import inputs.nixpkgs {
+        inherit system;
+        overlays = [
+          inputs.rust-overlay.overlays.rust-overlay
+        ];
+        config = { };
+      };
       devshells.default = {
         packages = with pkgs; [
           nil
@@ -26,6 +33,7 @@
           darwin.apple_sdk.frameworks.CoreFoundation
           darwin.apple_sdk.frameworks.Security
           curl.out
+          pkg-config
         ];
 
         commands = with pkgs; [

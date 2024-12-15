@@ -27,7 +27,7 @@
   ? if builtins.pathExists ./crate-config.nix
     then pkgs.callPackage ./crate-config.nix {}
     else {}
-, workspaceSrc ? null
+, workspaceSrc ? ./.
 }:
 
 rec {
